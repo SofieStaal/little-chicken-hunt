@@ -182,7 +182,7 @@ function startScanning() {
       }
     } else {
       dot.style.background = '#666';
-      label.textContent = 'S\u00f8ker...';
+      label.textContent = 'Leter etter kyllinger...';
       reticle.classList.remove('detected');
       detectionBuffer = [];
     }
