@@ -6,18 +6,18 @@ const COLOR_DISPLAY = {
 const TOTAL_CHICKENS = 6;
 
 // Reference HSL values sampled from the actual chicken photos.
-// We use distance-based matching: find the closest reference color.
-// Hue is circular (0-360), so we handle wraparound.
+// Green pushed to h:90 and yellow to h:50 for more separation.
+// Hue weight increased to 2.5x to make hue differences count more.
 const COLOR_REFS = {
   blue:   { h: 195, s: 45, l: 80 },   // pastel baby blue
-  green:  { h: 80,  s: 65, l: 50 },   // lime green (shifted toward yellow-green for real lighting)
-  orange: { h: 30,  s: 85, l: 55 },   // warm orange
+  green:  { h: 90,  s: 60, l: 45 },   // lime green — higher hue, lower lightness than yellow
+  orange: { h: 25,  s: 85, l: 55 },   // warm orange
   pink:   { h: 325, s: 50, l: 75 },   // soft light pink
   purple: { h: 305, s: 55, l: 45 },   // vivid magenta-purple
-  yellow: { h: 54,  s: 85, l: 65 },   // bright yellow (bumped lightness to separate from orange)
+  yellow: { h: 50,  s: 90, l: 70 },   // bright yellow — lower hue, higher lightness than green
 };
 // Maximum distance to accept a match (prevents matching random objects)
-const MAX_COLOR_DISTANCE = 55;
+const MAX_COLOR_DISTANCE = 50;
 
 const CSS_COLORS = {
   blue: '#4A90D9', green: '#4CAF50', orange: '#FF8C00',
@@ -28,8 +28,9 @@ let foundChickens = JSON.parse(localStorage.getItem('foundChickens') || '[]');
 let stream = null;
 let scanInterval = null;
 let detectionBuffer = [];
-let pendingColor = null; // color waiting for user confirmation
-const DETECTION_THRESHOLD = 5; // frames of consistent detection before showing confirm
+let pendingColor = null;
+const DETECTION_THRESHOLD = 15; // ~1.5 seconds of consistent detection
+const DETECTION_MAJORITY = 12;  // at least 12 out of 15 frames must agree
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,7 +52,6 @@ function updateUI() {
   document.getElementById('progress-fill').style.width = `${(count / TOTAL_CHICKENS) * 100}%`;
   document.getElementById('progress-text').textContent = `${count} / ${TOTAL_CHICKENS} funnet`;
 
-  // Check victory
   if (count === TOTAL_CHICKENS) {
     showScreen('screen-victory');
     startConfetti();
@@ -121,65 +121,45 @@ function startScanning() {
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    // Sample the center region (circle area)
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const radius = Math.min(canvas.width, canvas.height) * 0.08;
+    const innerRadius = Math.min(canvas.width, canvas.height) * 0.08;
+    const outerRadius = Math.min(canvas.width, canvas.height) * 0.16;
 
-    const colorCounts = {};
-    let totalSampled = 0;
+    // Sample center (where the chicken should be)
+    const centerResult = sampleRegion(ctx, centerX, centerY, innerRadius, 0);
+    // Sample outer ring (background around the chicken)
+    const outerResult = sampleRegion(ctx, centerX, centerY, outerRadius, innerRadius);
 
-    // Sample pixels in a grid within the center circle
-    const step = 4;
-    for (let x = centerX - radius; x < centerX + radius; x += step) {
-      for (let y = centerY - radius; y < centerY + radius; y += step) {
-        const dx = x - centerX;
-        const dy = y - centerY;
-        if (dx * dx + dy * dy > radius * radius) continue;
-
-        const pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
-        const [h, s, l] = rgbToHsl(pixel[0], pixel[1], pixel[2]);
-
-        const matched = matchColor(h, s, l);
-        if (matched) {
-          colorCounts[matched] = (colorCounts[matched] || 0) + 1;
-        }
-        totalSampled++;
-      }
-    }
-
-    // Find dominant color
-    let dominant = null;
-    let maxCount = 0;
-    for (const [color, count] of Object.entries(colorCounts)) {
-      if (count > maxCount) {
-        maxCount = count;
-        dominant = color;
-      }
-    }
-
-    const ratio = totalSampled > 0 ? maxCount / totalSampled : 0;
     const dot = document.getElementById('detected-dot');
     const label = document.getElementById('detected-label');
     const reticle = document.querySelector('.scan-reticle');
 
-    if (dominant && ratio > 0.15) {
-      dot.style.background = CSS_COLORS[dominant];
-      label.textContent = `${COLOR_DISPLAY[dominant]} oppdaget!`;
+    // Validate: center must have a dominant color, AND it must be different
+    // from the outer ring (chicken = distinct object against background)
+    const isChickenShaped = centerResult.dominant &&
+      centerResult.ratio > 0.15 &&
+      (outerResult.dominant !== centerResult.dominant || outerResult.ratio < 0.10);
+
+    if (isChickenShaped) {
+      dot.style.background = CSS_COLORS[centerResult.dominant];
+      label.textContent = `${COLOR_DISPLAY[centerResult.dominant]} oppdaget!`;
       reticle.classList.add('detected');
 
-      detectionBuffer.push(dominant);
+      detectionBuffer.push(centerResult.dominant);
       if (detectionBuffer.length > DETECTION_THRESHOLD) {
         detectionBuffer.shift();
       }
 
-      // Check if we have consistent detection — show confirm overlay
-      const consistent = detectionBuffer.length === DETECTION_THRESHOLD &&
-        detectionBuffer.every(c => c === dominant);
-
-      if (consistent && !pendingColor) {
-        showConfirmOverlay(dominant);
-        detectionBuffer = [];
+      // Check majority agreement over the buffer
+      if (detectionBuffer.length === DETECTION_THRESHOLD && !pendingColor) {
+        const counts = {};
+        detectionBuffer.forEach(c => counts[c] = (counts[c] || 0) + 1);
+        const topColor = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        if (topColor[1] >= DETECTION_MAJORITY) {
+          showConfirmOverlay(topColor[0]);
+          detectionBuffer = [];
+        }
       }
     } else {
       dot.style.background = '#666';
@@ -190,21 +170,62 @@ function startScanning() {
   }, 100);
 }
 
+// Sample a ring/circle region and return dominant color + ratio
+function sampleRegion(ctx, cx, cy, maxR, minR) {
+  const colorCounts = {};
+  let totalSampled = 0;
+  const step = 4;
+
+  for (let x = cx - maxR; x < cx + maxR; x += step) {
+    for (let y = cy - maxR; y < cy + maxR; y += step) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const distSq = dx * dx + dy * dy;
+      if (distSq > maxR * maxR) continue;
+      if (distSq < minR * minR) continue;
+
+      const pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+      const [h, s, l] = rgbToHsl(pixel[0], pixel[1], pixel[2]);
+
+      const matched = matchColor(h, s, l);
+      if (matched) {
+        colorCounts[matched] = (colorCounts[matched] || 0) + 1;
+      }
+      totalSampled++;
+    }
+  }
+
+  let dominant = null;
+  let maxCount = 0;
+  for (const [color, count] of Object.entries(colorCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominant = color;
+    }
+  }
+
+  return {
+    dominant,
+    ratio: totalSampled > 0 ? maxCount / totalSampled : 0,
+    total: totalSampled
+  };
+}
+
 function matchColor(h, s, l) {
-  // Skip very dark, very light, or very desaturated pixels (not a colored chicken)
+  // Skip very dark, very light, or very desaturated pixels
   if (s < 12 || l < 15 || l > 92) return null;
 
   let bestColor = null;
   let bestDist = Infinity;
 
   for (const [color, ref] of Object.entries(COLOR_REFS)) {
-    // Hue distance with circular wraparound (0-360)
+    // Hue distance with circular wraparound
     let dh = Math.abs(h - ref.h);
     if (dh > 180) dh = 360 - dh;
 
-    // Weight hue most heavily, then saturation, then lightness
+    // Hue weighted 2.5x to strongly separate green/yellow and pink/purple
     const dist = Math.sqrt(
-      (dh * 2.0) ** 2 +
+      (dh * 2.5) ** 2 +
       (s - ref.s) ** 2 +
       (l - ref.l) ** 2
     );
@@ -274,15 +295,13 @@ function registerChicken(color) {
 
   stopCamera();
 
-  // Show popup
   const popup = document.getElementById('popup-found');
   document.getElementById('popup-color-name').textContent = COLOR_DISPLAY[color];
   document.getElementById('popup-color-name').style.color = CSS_COLORS[color];
   document.getElementById('popup-count').textContent = `${foundChickens.length} / ${TOTAL_CHICKENS}`;
 
-  // Show the actual chicken photo
   document.getElementById('popup-chicken-icon').innerHTML =
-    `<img src="${color}.png" alt="${COLOR_DISPLAY[color]} chicken" style="width:100%;height:100%;object-fit:contain;">`;
+    `<img src="${color}.png" alt="${COLOR_DISPLAY[color]} kylling" style="width:100%;height:100%;object-fit:contain;">`;
 
   if (foundChickens.length === TOTAL_CHICKENS) {
     document.querySelector('.popup-btn').textContent = 'Hent premien!';
