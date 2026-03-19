@@ -10,14 +10,14 @@ const TOTAL_CHICKENS = 6;
 // Hue is circular (0-360), so we handle wraparound.
 const COLOR_REFS = {
   blue:   { h: 195, s: 45, l: 80 },   // pastel baby blue
-  green:  { h: 95,  s: 60, l: 50 },   // bright lime green
+  green:  { h: 80,  s: 65, l: 50 },   // lime green (shifted toward yellow-green for real lighting)
   orange: { h: 30,  s: 85, l: 55 },   // warm orange
   pink:   { h: 325, s: 50, l: 75 },   // soft light pink
   purple: { h: 305, s: 55, l: 45 },   // vivid magenta-purple
   yellow: { h: 54,  s: 85, l: 65 },   // bright yellow (bumped lightness to separate from orange)
 };
 // Maximum distance to accept a match (prevents matching random objects)
-const MAX_COLOR_DISTANCE = 40;
+const MAX_COLOR_DISTANCE = 55;
 
 const CSS_COLORS = {
   blue: '#4A90D9', green: '#4CAF50', orange: '#FF8C00',
@@ -123,7 +123,7 @@ function startScanning() {
     // Sample the center region (circle area)
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const radius = Math.min(canvas.width, canvas.height) * 0.15;
+    const radius = Math.min(canvas.width, canvas.height) * 0.08;
 
     const colorCounts = {};
     let totalSampled = 0;
@@ -162,7 +162,7 @@ function startScanning() {
     const label = document.getElementById('detected-label');
     const reticle = document.querySelector('.scan-reticle');
 
-    if (dominant && ratio > 0.3) {
+    if (dominant && ratio > 0.15) {
       dot.style.background = CSS_COLORS[dominant];
       label.textContent = `${COLOR_DISPLAY[dominant]} detected!`;
       reticle.classList.add('detected');
