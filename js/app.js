@@ -11,7 +11,7 @@ const TOTAL_CHICKENS = 6;
 const COLOR_REFS = {
   blue:   { h: 195, s: 45, l: 80 },   // pastel baby blue
   green:  { h: 90,  s: 60, l: 45 },   // lime green — higher hue, lower lightness than yellow
-  orange: { h: 25,  s: 85, l: 55 },   // warm orange
+  orange: { h: 30,  s: 85, l: 58 },   // warm orange (above beak exclusion zone)
   pink:   { h: 325, s: 50, l: 75 },   // soft light pink
   purple: { h: 305, s: 55, l: 45 },   // vivid magenta-purple
   yellow: { h: 50,  s: 90, l: 70 },   // bright yellow — lower hue, higher lightness than green
@@ -212,8 +212,15 @@ function sampleRegion(ctx, cx, cy, maxR, minR) {
 }
 
 function matchColor(h, s, l) {
-  // Skip very dark, very light, or very desaturated pixels
+  // Skip very dark (eyes), very light, or very desaturated pixels
   if (s < 12 || l < 15 || l > 92) return null;
+
+  // Skip red/dark-orange pixels — these are chicken legs and beaks,
+  // common to ALL chickens regardless of body color.
+  // Red legs: hue 0-15, saturated
+  // Orange beak: hue 15-22, saturated, medium lightness
+  if (h <= 15 && s > 40) return null;           // red legs
+  if (h > 15 && h <= 22 && s > 50) return null; // orange beak
 
   let bestColor = null;
   let bestDist = Infinity;
