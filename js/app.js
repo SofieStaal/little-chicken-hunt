@@ -30,7 +30,8 @@ let scanInterval = null;
 let detectionBuffer = [];
 let pendingColor = null;
 const DETECTION_THRESHOLD = 15; // ~1.5 seconds of consistent detection
-const DETECTION_MAJORITY = 12;  // at least 12 out of 15 frames must agree
+const DETECTION_MAJORITY = 8;   // at least 8 out of 15 frames must agree
+const DETECTION_LEAD = 4;       // winner must lead runner-up by at least 4
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -155,9 +156,12 @@ function startScanning() {
       if (detectionBuffer.length === DETECTION_THRESHOLD && !pendingColor) {
         const counts = {};
         detectionBuffer.forEach(c => counts[c] = (counts[c] || 0) + 1);
-        const topColor = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-        if (topColor[1] >= DETECTION_MAJORITY) {
-          showConfirmOverlay(topColor[0]);
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        const topCount = sorted[0][1];
+        const runnerUp = sorted.length > 1 ? sorted[1][1] : 0;
+        // Must have enough votes AND a clear lead over the second color
+        if (topCount >= DETECTION_MAJORITY && (topCount - runnerUp) >= DETECTION_LEAD) {
+          showConfirmOverlay(sorted[0][0]);
           detectionBuffer = [];
         }
       }
