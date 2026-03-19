@@ -18,7 +18,7 @@
   <div id="screen-home" class="screen active">
     <div class="home-header">
       <h1>Little Chicken Hunt</h1>
-      <p class="subtitle">Find all 5 Easter chickens hidden around the office!</p>
+      <p class="subtitle">Find all 6 Easter chickens hidden around the office!</p>
     </div>
 
     <div class="chicken-grid">
@@ -35,6 +35,14 @@
           <img src="green.png" alt="Green chicken">
         </div>
         <span class="chicken-label">Green</span>
+        <div class="found-badge">&#10003;</div>
+      </div>
+
+      <div class="chicken-card" data-color="orange">
+        <div class="chicken-icon">
+          <img src="orange.png" alt="Orange chicken">
+        </div>
+        <span class="chicken-label">Orange</span>
         <div class="found-badge">&#10003;</div>
       </div>
 
@@ -67,7 +75,7 @@
       <div class="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
-      <p class="progress-text" id="progress-text">0 / 5 found</p>
+      <p class="progress-text" id="progress-text">0 / 6 found</p>
     </div>
 
     <button class="scan-btn" id="btn-scan" onclick="openScanner()">
@@ -110,7 +118,7 @@
       <div class="popup-chicken" id="popup-chicken-icon"></div>
       <h2 id="popup-title">You found one!</h2>
       <p id="popup-message">The <strong id="popup-color-name">blue</strong> chicken has been collected!</p>
-      <div class="popup-count" id="popup-count">1 / 5</div>
+      <div class="popup-count" id="popup-count">1 / 6</div>
       <button class="popup-btn" onclick="closePopup()">Keep Hunting!</button>
     </div>
   </div>
@@ -121,10 +129,11 @@
     <div class="victory-content">
       <div class="victory-egg">&#x1F95A;</div>
       <h1>Mission Complete!</h1>
-      <p class="victory-sub">You found all 5 chickens!</p>
+      <p class="victory-sub">You found all 6 chickens!</p>
       <div class="victory-chickens">
         <img src="blue.png" alt="Blue">
         <img src="green.png" alt="Green">
+        <img src="orange.png" alt="Orange">
         <img src="pink.png" alt="Pink">
         <img src="purple.png" alt="Purple">
         <img src="yellow.png" alt="Yellow">

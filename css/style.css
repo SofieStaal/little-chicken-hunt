@@ -67,10 +67,7 @@ body {
   max-width: 360px;
   margin-bottom: 24px;
 }
-.chicken-grid .chicken-card:nth-child(4),
-.chicken-grid .chicken-card:nth-child(5) {
-  /* Center the last row of 2 */
-}
+/* 6 cards = perfect 3x2 grid */
 /* Center the last 2 items */
 .chicken-grid {
   justify-items: center;

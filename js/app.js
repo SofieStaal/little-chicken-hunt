@@ -1,8 +1,9 @@
 // ── State ──
-const COLORS = ['blue', 'green', 'pink', 'purple', 'yellow'];
+const COLORS = ['blue', 'green', 'orange', 'pink', 'purple', 'yellow'];
 const COLOR_DISPLAY = {
-  blue: 'Blue', green: 'Green', pink: 'Pink', purple: 'Purple', yellow: 'Yellow'
+  blue: 'Blue', green: 'Green', orange: 'Orange', pink: 'Pink', purple: 'Purple', yellow: 'Yellow'
 };
+const TOTAL_CHICKENS = 6;
 
 // Reference HSL values sampled from the actual chicken photos.
 // We use distance-based matching: find the closest reference color.
@@ -10,16 +11,17 @@ const COLOR_DISPLAY = {
 const COLOR_REFS = {
   blue:   { h: 195, s: 45, l: 80 },   // pastel baby blue
   green:  { h: 95,  s: 60, l: 50 },   // bright lime green
+  orange: { h: 30,  s: 85, l: 55 },   // warm orange
   pink:   { h: 325, s: 50, l: 75 },   // soft light pink
   purple: { h: 305, s: 55, l: 45 },   // vivid magenta-purple
-  yellow: { h: 54,  s: 85, l: 58 },   // bright yellow
+  yellow: { h: 54,  s: 85, l: 65 },   // bright yellow (bumped lightness to separate from orange)
 };
 // Maximum distance to accept a match (prevents matching random objects)
 const MAX_COLOR_DISTANCE = 40;
 
 const CSS_COLORS = {
-  blue: '#4A90D9', green: '#4CAF50', pink: '#FF69B4',
-  purple: '#9C27B0', yellow: '#FFD700'
+  blue: '#4A90D9', green: '#4CAF50', orange: '#FF8C00',
+  pink: '#FF69B4', purple: '#9C27B0', yellow: '#FFD700'
 };
 
 let foundChickens = JSON.parse(localStorage.getItem('foundChickens') || '[]');
@@ -45,11 +47,11 @@ function updateUI() {
   });
 
   const count = foundChickens.length;
-  document.getElementById('progress-fill').style.width = `${(count / 5) * 100}%`;
-  document.getElementById('progress-text').textContent = `${count} / 5 found`;
+  document.getElementById('progress-fill').style.width = `${(count / TOTAL_CHICKENS) * 100}%`;
+  document.getElementById('progress-text').textContent = `${count} / ${TOTAL_CHICKENS} found`;
 
   // Check victory
-  if (count === 5) {
+  if (count === TOTAL_CHICKENS) {
     showScreen('screen-victory');
     startConfetti();
   }
@@ -62,7 +64,7 @@ function showScreen(id) {
 }
 
 function openScanner() {
-  if (foundChickens.length === 5) {
+  if (foundChickens.length === TOTAL_CHICKENS) {
     showScreen('screen-victory');
     startConfetti();
     return;
@@ -251,13 +253,13 @@ function registerChicken(color) {
   const popup = document.getElementById('popup-found');
   document.getElementById('popup-color-name').textContent = COLOR_DISPLAY[color];
   document.getElementById('popup-color-name').style.color = CSS_COLORS[color];
-  document.getElementById('popup-count').textContent = `${foundChickens.length} / 5`;
+  document.getElementById('popup-count').textContent = `${foundChickens.length} / ${TOTAL_CHICKENS}`;
 
   // Show the actual chicken photo
   document.getElementById('popup-chicken-icon').innerHTML =
     `<img src="${color}.png" alt="${COLOR_DISPLAY[color]} chicken" style="width:100%;height:100%;object-fit:contain;">`;
 
-  if (foundChickens.length === 5) {
+  if (foundChickens.length === TOTAL_CHICKENS) {
     document.querySelector('.popup-btn').textContent = 'Claim Your Reward!';
     document.getElementById('popup-title').textContent = 'ALL FOUND!';
     document.getElementById('popup-message').innerHTML =
@@ -274,7 +276,7 @@ function registerChicken(color) {
 
 function closePopup() {
   document.getElementById('popup-found').classList.remove('active');
-  if (foundChickens.length === 5) {
+  if (foundChickens.length === TOTAL_CHICKENS) {
     showScreen('screen-victory');
     startConfetti();
   } else {
