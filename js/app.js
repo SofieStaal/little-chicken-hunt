@@ -17,7 +17,7 @@ const COLOR_REFS = {
   yellow: { h: 50,  s: 90, l: 70 },   // bright yellow — lower hue, higher lightness than green
 };
 // Maximum distance to accept a match (prevents matching random objects)
-const MAX_COLOR_DISTANCE = 50;
+const MAX_COLOR_DISTANCE = 60;
 
 const CSS_COLORS = {
   blue: '#4A90D9', green: '#4CAF50', orange: '#FF8C00',
@@ -123,8 +123,8 @@ function startScanning() {
 
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const innerRadius = Math.min(canvas.width, canvas.height) * 0.08;
-    const outerRadius = Math.min(canvas.width, canvas.height) * 0.16;
+    const innerRadius = Math.min(canvas.width, canvas.height) * 0.12;
+    const outerRadius = Math.min(canvas.width, canvas.height) * 0.22;
 
     // Sample center (where the chicken should be)
     const centerResult = sampleRegion(ctx, centerX, centerY, innerRadius, 0);
@@ -138,7 +138,7 @@ function startScanning() {
     // Validate: center must have a dominant color, AND it must be different
     // from the outer ring (chicken = distinct object against background)
     const isChickenShaped = centerResult.dominant &&
-      centerResult.ratio > 0.15 &&
+      centerResult.ratio > 0.10 &&
       (outerResult.dominant !== centerResult.dominant || outerResult.ratio < 0.10);
 
     if (isChickenShaped) {
@@ -213,7 +213,8 @@ function sampleRegion(ctx, cx, cy, maxR, minR) {
 
 function matchColor(h, s, l) {
   // Skip very dark (eyes), very light, or very desaturated pixels
-  if (s < 12 || l < 15 || l > 92) return null;
+  // Low thresholds to allow pastel colors like the light blue chicken
+  if (s < 6 || l < 12 || l > 96) return null;
 
   // Skip red/dark-orange pixels — these are chicken legs and beaks,
   // common to ALL chickens regardless of body color.
