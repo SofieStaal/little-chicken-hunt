@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#FFF8E7">
-  <title>Little Chicken Hunt</title>
+  <title>Kyllingjakt</title>
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,8 +17,8 @@
   <!-- HOME SCREEN -->
   <div id="screen-home" class="screen active">
     <div class="home-header">
-      <h1>Little Chicken Hunt</h1>
-      <p class="subtitle">Find all 6 Easter chickens hidden around the office!</p>
+      <h1>Kyllingjakt</h1>
+      <p class="subtitle">Finn alle 6 p&aring;skekyllingene gjemt p&aring; kontoret!</p>
     </div>
 
     <div class="chicken-grid">
@@ -26,47 +26,47 @@
         <div class="chicken-icon">
           <img src="blue.png" alt="Blue chicken">
         </div>
-        <span class="chicken-label">Blue</span>
+        <span class="chicken-label">Bl&aring;</span>
         <div class="found-badge">&#10003;</div>
       </div>
 
       <div class="chicken-card" data-color="green">
         <div class="chicken-icon">
-          <img src="green.png" alt="Green chicken">
+          <img src="green.png" alt="Gr&oslash;nn kylling">
         </div>
-        <span class="chicken-label">Green</span>
+        <span class="chicken-label">Gr&oslash;nn</span>
         <div class="found-badge">&#10003;</div>
       </div>
 
       <div class="chicken-card" data-color="orange">
         <div class="chicken-icon">
-          <img src="orange.png" alt="Orange chicken">
+          <img src="orange.png" alt="Oransje kylling">
         </div>
-        <span class="chicken-label">Orange</span>
+        <span class="chicken-label">Oransje</span>
         <div class="found-badge">&#10003;</div>
       </div>
 
       <div class="chicken-card" data-color="pink">
         <div class="chicken-icon">
-          <img src="pink.png" alt="Pink chicken">
+          <img src="pink.png" alt="Rosa kylling">
         </div>
-        <span class="chicken-label">Pink</span>
+        <span class="chicken-label">Rosa</span>
         <div class="found-badge">&#10003;</div>
       </div>
 
       <div class="chicken-card" data-color="purple">
         <div class="chicken-icon">
-          <img src="purple.png" alt="Purple chicken">
+          <img src="purple.png" alt="Lilla kylling">
         </div>
-        <span class="chicken-label">Purple</span>
+        <span class="chicken-label">Lilla</span>
         <div class="found-badge">&#10003;</div>
       </div>
 
       <div class="chicken-card" data-color="yellow">
         <div class="chicken-icon">
-          <img src="yellow.png" alt="Yellow chicken">
+          <img src="yellow.png" alt="Gul kylling">
         </div>
-        <span class="chicken-label">Yellow</span>
+        <span class="chicken-label">Gul</span>
         <div class="found-badge">&#10003;</div>
       </div>
     </div>
@@ -75,22 +75,22 @@
       <div class="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
-      <p class="progress-text" id="progress-text">0 / 6 found</p>
+      <p class="progress-text" id="progress-text">0 / 6 funnet</p>
     </div>
 
     <button class="scan-btn" id="btn-scan" onclick="openScanner()">
       <span class="scan-icon">&#x1F4F7;</span>
-      Scan a Chicken
+      Skann en kylling
     </button>
 
-    <button class="reset-btn" id="btn-reset" onclick="resetProgress()">Start Over</button>
+    <button class="reset-btn" id="btn-reset" onclick="resetProgress()">Start p&aring; nytt</button>
   </div>
 
   <!-- SCANNER SCREEN -->
   <div id="screen-scanner" class="screen">
     <div class="scanner-header">
-      <button class="back-btn" onclick="closeScanner()">&#x2190; Back</button>
-      <h2>Point at a chicken</h2>
+      <button class="back-btn" onclick="closeScanner()">&#x2190; Tilbake</button>
+      <h2>Pek p&aring; en kylling</h2>
     </div>
 
     <div class="camera-container">
@@ -108,7 +108,7 @@
     </div>
 
     <div class="scanner-hint" id="scanner-hint">
-      Center the chicken in the circle
+      Plasser kyllingen i sirkelen
     </div>
   </div>
 
@@ -116,10 +116,10 @@
   <div id="popup-found" class="popup">
     <div class="popup-content">
       <div class="popup-chicken" id="popup-chicken-icon"></div>
-      <h2 id="popup-title">You found one!</h2>
-      <p id="popup-message">The <strong id="popup-color-name">blue</strong> chicken has been collected!</p>
+      <h2 id="popup-title">Du fant en!</h2>
+      <p id="popup-message">Den <strong id="popup-color-name">bl&aring;</strong> kyllingen er samlet inn!</p>
       <div class="popup-count" id="popup-count">1 / 6</div>
-      <button class="popup-btn" onclick="closePopup()">Keep Hunting!</button>
+      <button class="popup-btn" onclick="closePopup()">Fortsett jakten!</button>
     </div>
   </div>
 
@@ -128,8 +128,8 @@
     <canvas id="confetti-canvas"></canvas>
     <div class="victory-content">
       <div class="victory-egg">&#x1F95A;</div>
-      <h1>Mission Complete!</h1>
-      <p class="victory-sub">You found all 6 chickens!</p>
+      <h1>Oppdrag utf&oslash;rt!</h1>
+      <p class="victory-sub">Du fant alle 6 kyllingene!</p>
       <div class="victory-chickens">
         <img src="blue.png" alt="Blue">
         <img src="green.png" alt="Green">
@@ -139,10 +139,10 @@
         <img src="yellow.png" alt="Yellow">
       </div>
       <div class="reward-box">
-        <p>Go claim your reward!</p>
-        <p class="reward-detail">Find the Easter egg with candy at reception</p>
+        <p>Hent premien din!</p>
+        <p class="reward-detail">Finn p&aring;skeegget med godteri i resepsjonen</p>
       </div>
-      <button class="popup-btn" onclick="resetAndGoHome()">Play Again</button>
+      <button class="popup-btn" onclick="resetAndGoHome()">Spill igjen</button>
     </div>
   </div>
 

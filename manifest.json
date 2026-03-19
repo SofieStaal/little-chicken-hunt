@@ -1,7 +1,7 @@
 {
-  "name": "Little Chicken Hunt",
-  "short_name": "Chicken Hunt",
-  "description": "Find all 5 Easter chickens hidden around the office!",
+  "name": "Kyllingjakt",
+  "short_name": "Kyllingjakt",
+  "description": "Finn alle 6 p\u00e5skekyllingene gjemt p\u00e5 kontoret!",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFF8E7",

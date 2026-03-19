@@ -1,7 +1,7 @@
 // ── State ──
 const COLORS = ['blue', 'green', 'orange', 'pink', 'purple', 'yellow'];
 const COLOR_DISPLAY = {
-  blue: 'Blue', green: 'Green', orange: 'Orange', pink: 'Pink', purple: 'Purple', yellow: 'Yellow'
+  blue: 'Bl\u00e5', green: 'Gr\u00f8nn', orange: 'Oransje', pink: 'Rosa', purple: 'Lilla', yellow: 'Gul'
 };
 const TOTAL_CHICKENS = 6;
 
@@ -48,7 +48,7 @@ function updateUI() {
 
   const count = foundChickens.length;
   document.getElementById('progress-fill').style.width = `${(count / TOTAL_CHICKENS) * 100}%`;
-  document.getElementById('progress-text').textContent = `${count} / ${TOTAL_CHICKENS} found`;
+  document.getElementById('progress-text').textContent = `${count} / ${TOTAL_CHICKENS} funnet`;
 
   // Check victory
   if (count === TOTAL_CHICKENS) {
@@ -91,7 +91,7 @@ async function startCamera() {
     startScanning();
   } catch (err) {
     document.getElementById('scanner-hint').textContent =
-      'Camera access needed. Please allow camera permissions.';
+      'Kameratilgang kreves. Vennligst gi tilgang til kameraet.';
   }
 }
 
@@ -164,7 +164,7 @@ function startScanning() {
 
     if (dominant && ratio > 0.15) {
       dot.style.background = CSS_COLORS[dominant];
-      label.textContent = `${COLOR_DISPLAY[dominant]} detected!`;
+      label.textContent = `${COLOR_DISPLAY[dominant]} oppdaget!`;
       reticle.classList.add('detected');
 
       detectionBuffer.push(dominant);
@@ -182,7 +182,7 @@ function startScanning() {
       }
     } else {
       dot.style.background = '#666';
-      label.textContent = 'Searching...';
+      label.textContent = 'S\u00f8ker...';
       reticle.classList.remove('detected');
       detectionBuffer = [];
     }
@@ -240,7 +240,7 @@ function rgbToHsl(r, g, b) {
 // ── Register found chicken ──
 function registerChicken(color) {
   if (foundChickens.includes(color)) {
-    showToast(`You already found the ${COLOR_DISPLAY[color]} chicken!`);
+    showToast(`Du har allerede funnet den ${COLOR_DISPLAY[color].toLowerCase()} kyllingen!`);
     return;
   }
 
@@ -260,15 +260,15 @@ function registerChicken(color) {
     `<img src="${color}.png" alt="${COLOR_DISPLAY[color]} chicken" style="width:100%;height:100%;object-fit:contain;">`;
 
   if (foundChickens.length === TOTAL_CHICKENS) {
-    document.querySelector('.popup-btn').textContent = 'Claim Your Reward!';
-    document.getElementById('popup-title').textContent = 'ALL FOUND!';
+    document.querySelector('.popup-btn').textContent = 'Hent premien!';
+    document.getElementById('popup-title').textContent = 'ALLE FUNNET!';
     document.getElementById('popup-message').innerHTML =
-      'You found every chicken! Time to claim your <strong>Easter egg</strong>!';
+      'Du fant alle kyllingene! P\u00e5 tide \u00e5 hente <strong>p\u00e5skeegget</strong>!';
   } else {
-    document.querySelector('.popup-btn').textContent = 'Keep Hunting!';
-    document.getElementById('popup-title').textContent = 'You found one!';
+    document.querySelector('.popup-btn').textContent = 'Fortsett jakten!';
+    document.getElementById('popup-title').textContent = 'Du fant en!';
     document.getElementById('popup-message').innerHTML =
-      `The <strong style="color:${CSS_COLORS[color]}">${COLOR_DISPLAY[color]}</strong> chicken has been collected!`;
+      `Den <strong style="color:${CSS_COLORS[color]}">${COLOR_DISPLAY[color].toLowerCase()}</strong> kyllingen er samlet inn!`;
   }
 
   popup.classList.add('active');
