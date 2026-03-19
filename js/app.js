@@ -4,20 +4,18 @@ const COLOR_DISPLAY = {
   blue: 'Blue', green: 'Green', pink: 'Pink', purple: 'Purple', yellow: 'Yellow'
 };
 
-// HSL ranges tuned to the actual fluffy Easter chickens:
-// Blue: pastel baby blue (very light, low saturation)
-// Green: bright lime green
-// Pink: soft pink/light magenta (lighter, less saturated than purple)
-// Purple: vivid magenta-purple (darker, more saturated than pink)
-// Yellow: classic bright yellow
-// Pink vs purple is tricky — we split on lightness: pink is lighter (l>50), purple is darker
-const COLOR_RANGES = {
-  blue:   { hMin: 170, hMax: 210, sMin: 15, lMin: 55, lMax: 90 },
-  green:  { hMin: 70,  hMax: 160, sMin: 25, lMin: 30, lMax: 80 },
-  pink:   { hMin: 290, hMax: 360, sMin: 15, lMin: 55, lMax: 90 },
-  purple: { hMin: 270, hMax: 320, sMin: 25, lMin: 20, lMax: 55 },
-  yellow: { hMin: 38,  hMax: 70,  sMin: 35, lMin: 45, lMax: 85 },
+// Reference HSL values sampled from the actual chicken photos.
+// We use distance-based matching: find the closest reference color.
+// Hue is circular (0-360), so we handle wraparound.
+const COLOR_REFS = {
+  blue:   { h: 195, s: 45, l: 80 },   // pastel baby blue
+  green:  { h: 95,  s: 60, l: 50 },   // bright lime green
+  pink:   { h: 325, s: 50, l: 75 },   // soft light pink
+  purple: { h: 305, s: 55, l: 45 },   // vivid magenta-purple
+  yellow: { h: 54,  s: 85, l: 58 },   // bright yellow
 };
+// Maximum distance to accept a match (prevents matching random objects)
+const MAX_COLOR_DISTANCE = 40;
 
 const CSS_COLORS = {
   blue: '#4A90D9', green: '#4CAF50', pink: '#FF69B4',
@@ -190,14 +188,31 @@ function startScanning() {
 }
 
 function matchColor(h, s, l) {
-  for (const [color, range] of Object.entries(COLOR_RANGES)) {
-    if (h >= range.hMin && h <= range.hMax &&
-        s >= range.sMin &&
-        l >= range.lMin && l <= range.lMax) {
-      return color;
+  // Skip very dark, very light, or very desaturated pixels (not a colored chicken)
+  if (s < 12 || l < 15 || l > 92) return null;
+
+  let bestColor = null;
+  let bestDist = Infinity;
+
+  for (const [color, ref] of Object.entries(COLOR_REFS)) {
+    // Hue distance with circular wraparound (0-360)
+    let dh = Math.abs(h - ref.h);
+    if (dh > 180) dh = 360 - dh;
+
+    // Weight hue most heavily, then saturation, then lightness
+    const dist = Math.sqrt(
+      (dh * 2.0) ** 2 +
+      (s - ref.s) ** 2 +
+      (l - ref.l) ** 2
+    );
+
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestColor = color;
     }
   }
-  return null;
+
+  return bestDist <= MAX_COLOR_DISTANCE ? bestColor : null;
 }
 
 function rgbToHsl(r, g, b) {
