@@ -105,6 +105,17 @@
         <div class="detected-color-dot" id="detected-dot"></div>
         <span id="detected-label">Leter etter kyllinger...</span>
       </div>
+
+      <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-card">
+          <img id="confirm-chicken-img" src="" alt="">
+          <h3 id="confirm-text">Er dette den bl&aring; kyllingen?</h3>
+          <div class="confirm-buttons">
+            <button class="confirm-btn yes" onclick="confirmChicken()">Ja!</button>
+            <button class="confirm-btn no" onclick="cancelConfirm()">Nei, feil farge</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="scanner-hint" id="scanner-hint">

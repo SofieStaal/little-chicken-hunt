@@ -28,7 +28,8 @@ let foundChickens = JSON.parse(localStorage.getItem('foundChickens') || '[]');
 let stream = null;
 let scanInterval = null;
 let detectionBuffer = [];
-const DETECTION_THRESHOLD = 15; // frames of consistent detection before confirming
+let pendingColor = null; // color waiting for user confirmation
+const DETECTION_THRESHOLD = 5; // frames of consistent detection before showing confirm
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -172,12 +173,12 @@ function startScanning() {
         detectionBuffer.shift();
       }
 
-      // Check if we have consistent detection
+      // Check if we have consistent detection — show confirm overlay
       const consistent = detectionBuffer.length === DETECTION_THRESHOLD &&
         detectionBuffer.every(c => c === dominant);
 
-      if (consistent) {
-        registerChicken(dominant);
+      if (consistent && !pendingColor) {
+        showConfirmOverlay(dominant);
         detectionBuffer = [];
       }
     } else {
@@ -237,12 +238,36 @@ function rgbToHsl(r, g, b) {
   return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
 }
 
-// ── Register found chicken ──
-function registerChicken(color) {
+// ── Confirm overlay ──
+function showConfirmOverlay(color) {
   if (foundChickens.includes(color)) {
     showToast(`Du har allerede funnet den ${COLOR_DISPLAY[color].toLowerCase()} kyllingen!`);
     return;
   }
+  pendingColor = color;
+  document.getElementById('confirm-chicken-img').src = `${color}.png`;
+  document.getElementById('confirm-text').textContent =
+    `Er dette den ${COLOR_DISPLAY[color].toLowerCase()} kyllingen?`;
+  document.getElementById('confirm-overlay').classList.add('active');
+}
+
+function confirmChicken() {
+  document.getElementById('confirm-overlay').classList.remove('active');
+  if (pendingColor) {
+    registerChicken(pendingColor);
+    pendingColor = null;
+  }
+}
+
+function cancelConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('active');
+  pendingColor = null;
+  detectionBuffer = [];
+}
+
+// ── Register found chicken ──
+function registerChicken(color) {
+  if (foundChickens.includes(color)) return;
 
   foundChickens.push(color);
   localStorage.setItem('foundChickens', JSON.stringify(foundChickens));
