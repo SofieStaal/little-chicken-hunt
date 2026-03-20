@@ -315,7 +315,7 @@ function confirmChicken() {
 function cancelConfirm() {
   document.getElementById('confirm-overlay').classList.remove('active');
   pendingColor = null;
-  detectionBuffer = [];
+  lastDetectedColor = null;
 }
 
 // ── Register found chicken ──
