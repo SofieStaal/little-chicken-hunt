@@ -249,8 +249,15 @@ function showConfirmOverlay(color) {
 function confirmChicken() {
   document.getElementById('confirm-overlay').classList.remove('active');
   if (pendingColor) {
-    registerChicken(pendingColor);
+    // Register and go straight to home screen
+    if (!foundChickens.includes(pendingColor)) {
+      foundChickens.push(pendingColor);
+      localStorage.setItem('foundChickens', JSON.stringify(foundChickens));
+    }
+    stopCamera();
     pendingColor = null;
+    showScreen('screen-home');
+    updateUI();
   }
 }
 
