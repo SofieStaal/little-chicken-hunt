@@ -237,42 +237,97 @@ function rgbToHsl(r, g, b) {
   return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
 }
 
+// ── Confusing color pairs ──
+const CONFUSED_PAIRS = {
+  pink: ['pink', 'purple'],
+  purple: ['pink', 'purple'],
+  green: ['green', 'yellow'],
+  yellow: ['green', 'yellow'],
+};
+
 // ── Confirm overlay ──
 function showConfirmOverlay(color) {
-  pendingColor = color;
-  document.getElementById('confirm-chicken-img').src = `${color}.png`;
-  document.getElementById('confirm-text').textContent =
-    `Er dette den ${COLOR_DISPLAY[color].toLowerCase()} kyllingen?`;
+  const imagesDiv = document.getElementById('confirm-chicken-images');
+  const textEl = document.getElementById('confirm-text');
+  const buttonsDiv = document.getElementById('confirm-buttons');
+  imagesDiv.innerHTML = '';
+  buttonsDiv.innerHTML = '';
+
+  const pair = CONFUSED_PAIRS[color];
+
+  if (pair) {
+    // Confusing pair — filter out already found colors
+    const options = pair.filter(c => !foundChickens.includes(c));
+
+    if (options.length === 0) {
+      showToast('Du har allerede funnet begge disse fargene!');
+      resumeScanning();
+      return;
+    }
+
+    if (options.length === 1) {
+      // Only one of the pair left — treat as clear match
+      showSingleConfirm(options[0], imagesDiv, textEl, buttonsDiv);
+    } else {
+      // Show both options
+      textEl.textContent = 'Hvilken farge er dette?';
+      options.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'confirm-choice-btn';
+        btn.innerHTML = `<img src="${c}.png" alt="${COLOR_DISPLAY[c]}">${COLOR_DISPLAY[c]}`;
+        btn.onclick = () => pickColor(c);
+        buttonsDiv.appendChild(btn);
+      });
+      // Add cancel button
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'confirm-btn no';
+      cancelBtn.textContent = 'Ingen av dem';
+      cancelBtn.onclick = cancelConfirm;
+      buttonsDiv.appendChild(cancelBtn);
+    }
+  } else {
+    // Clear match (blue, orange) — single confirm
+    showSingleConfirm(color, imagesDiv, textEl, buttonsDiv);
+  }
+
   document.getElementById('confirm-overlay').classList.add('active');
 }
 
-function confirmChicken() {
-  const color = pendingColor;
-  pendingColor = null;
+function showSingleConfirm(color, imagesDiv, textEl, buttonsDiv) {
+  imagesDiv.innerHTML = `<img src="${color}.png" alt="${COLOR_DISPLAY[color]}">`;
+  textEl.textContent = `Er dette den ${COLOR_DISPLAY[color].toLowerCase()} kyllingen?`;
 
-  // Hide overlay
+  const yesBtn = document.createElement('button');
+  yesBtn.className = 'confirm-btn yes';
+  yesBtn.textContent = 'Ja!';
+  yesBtn.onclick = () => pickColor(color);
+  buttonsDiv.appendChild(yesBtn);
+
+  const noBtn = document.createElement('button');
+  noBtn.className = 'confirm-btn no';
+  noBtn.textContent = 'Nei, feil farge';
+  noBtn.onclick = cancelConfirm;
+  buttonsDiv.appendChild(noBtn);
+}
+
+function pickColor(color) {
   document.getElementById('confirm-overlay').classList.remove('active');
 
-  if (color) {
-    // Register chicken
-    if (!foundChickens.includes(color)) {
-      foundChickens.push(color);
-      localStorage.setItem('foundChickens', JSON.stringify(foundChickens));
-    }
-    stopCamera();
-
-    // Small delay to let overlay close, then go home
-    setTimeout(() => {
-      showScreen('screen-home');
-      updateUI();
-    }, 200);
+  if (!foundChickens.includes(color)) {
+    foundChickens.push(color);
+    localStorage.setItem('foundChickens', JSON.stringify(foundChickens));
   }
+  stopCamera();
+
+  setTimeout(() => {
+    showScreen('screen-home');
+    updateUI();
+  }, 200);
 }
 
 function cancelConfirm() {
   document.getElementById('confirm-overlay').classList.remove('active');
   pendingColor = null;
-  // Resume scanning — camera stream is still alive
   resumeScanning();
 }
 
