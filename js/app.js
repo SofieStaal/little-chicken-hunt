@@ -30,9 +30,9 @@ let scanInterval = null;
 let detectionBuffer = [];
 let pendingColor = null;
 let missCount = 0;
-const DETECTION_THRESHOLD = 15; // ~1.5 seconds of consistent detection
-const DETECTION_MAJORITY = 8;   // at least 8 out of 15 frames must agree
-const DETECTION_LEAD = 4;       // winner must lead runner-up by at least 4
+const DETECTION_THRESHOLD = 10; // ~1 second of detection
+const DETECTION_MAJORITY = 5;   // at least 5 out of 10 frames must agree
+const DETECTION_LEAD = 2;       // winner must lead runner-up by at least 2
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
