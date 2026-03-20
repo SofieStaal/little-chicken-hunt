@@ -84,11 +84,24 @@ function closeScanner() {
 // ── Camera ──
 async function startCamera() {
   const video = document.getElementById('camera-feed');
+
+  // Fully clean up any previous stream first
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+  video.srcObject = null;
+
   try {
+    // Small delay to let the previous stream fully release (iOS Safari fix)
+    await new Promise(r => setTimeout(r, 300));
+
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     video.srcObject = stream;
+    video.setAttribute('autoplay', '');
+    video.setAttribute('playsinline', '');
     await video.play();
     startScanning();
   } catch (err) {
@@ -106,6 +119,8 @@ function stopCamera() {
     stream.getTracks().forEach(t => t.stop());
     stream = null;
   }
+  const video = document.getElementById('camera-feed');
+  if (video) video.srcObject = null;
   detectionBuffer = [];
 }
 
