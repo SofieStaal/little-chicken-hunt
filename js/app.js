@@ -5,18 +5,14 @@ const COLOR_DISPLAY = {
 };
 const TOTAL_CHICKENS = 6;
 
-// Reference HSL values sampled from the actual chicken photos.
-// Green pushed to h:90 and yellow to h:50 for more separation.
-// Hue weight increased to 2.5x to make hue differences count more.
 const COLOR_REFS = {
-  blue:   { h: 195, s: 45, l: 80 },   // pastel baby blue
-  green:  { h: 90,  s: 60, l: 45 },   // lime green — higher hue, lower lightness than yellow
-  orange: { h: 30,  s: 85, l: 58 },   // warm orange (above beak exclusion zone)
-  pink:   { h: 325, s: 50, l: 75 },   // soft light pink
-  purple: { h: 305, s: 55, l: 45 },   // vivid magenta-purple
-  yellow: { h: 50,  s: 90, l: 70 },   // bright yellow — lower hue, higher lightness than green
+  blue:   { h: 195, s: 45, l: 80 },
+  green:  { h: 90,  s: 60, l: 45 },
+  orange: { h: 30,  s: 85, l: 58 },
+  pink:   { h: 325, s: 50, l: 75 },
+  purple: { h: 305, s: 55, l: 45 },
+  yellow: { h: 50,  s: 90, l: 70 },
 };
-// Maximum distance to accept a match (prevents matching random objects)
 const MAX_COLOR_DISTANCE = 60;
 
 const CSS_COLORS = {
@@ -28,28 +24,18 @@ let foundChickens = JSON.parse(localStorage.getItem('foundChickens') || '[]');
 let stream = null;
 let scanInterval = null;
 let pendingColor = null;
-let lastDetectedColor = null;
+let scanning = false;
 
 // ── Init ──
-document.addEventListener('DOMContentLoaded', () => {
-  updateUI();
-});
+document.addEventListener('DOMContentLoaded', () => updateUI());
 
 function updateUI() {
-  const cards = document.querySelectorAll('.chicken-card');
-  cards.forEach(card => {
-    const color = card.dataset.color;
-    if (foundChickens.includes(color)) {
-      card.classList.add('found');
-    } else {
-      card.classList.remove('found');
-    }
+  document.querySelectorAll('.chicken-card').forEach(card => {
+    card.classList.toggle('found', foundChickens.includes(card.dataset.color));
   });
-
   const count = foundChickens.length;
   document.getElementById('progress-fill').style.width = `${(count / TOTAL_CHICKENS) * 100}%`;
   document.getElementById('progress-text').textContent = `${count} / ${TOTAL_CHICKENS} funnet`;
-
   if (count === TOTAL_CHICKENS) {
     showScreen('screen-victory');
     startConfetti();
@@ -82,7 +68,7 @@ function closeScanner() {
 async function startCamera() {
   const video = document.getElementById('camera-feed');
 
-  // Fully clean up any previous stream first
+  // Clean up previous stream
   if (stream) {
     stream.getTracks().forEach(t => t.stop());
     stream = null;
@@ -90,9 +76,7 @@ async function startCamera() {
   video.srcObject = null;
 
   try {
-    // Small delay to let the previous stream fully release (iOS Safari fix)
     await new Promise(r => setTimeout(r, 300));
-
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
@@ -108,18 +92,27 @@ async function startCamera() {
 }
 
 function stopCamera() {
-  if (scanInterval) {
-    clearInterval(scanInterval);
-    scanInterval = null;
-  }
+  stopScanning();
   if (stream) {
     stream.getTracks().forEach(t => t.stop());
     stream = null;
   }
   const video = document.getElementById('camera-feed');
   if (video) video.srcObject = null;
-  lastDetectedColor = null;
-  hideCaptureBtn();
+}
+
+function stopScanning() {
+  if (scanInterval) {
+    clearInterval(scanInterval);
+    scanInterval = null;
+  }
+  scanning = false;
+}
+
+function resumeScanning() {
+  if (stream && !scanning) {
+    startScanning();
+  }
 }
 
 // ── Color Detection ──
@@ -127,9 +120,15 @@ function startScanning() {
   const video = document.getElementById('camera-feed');
   const canvas = document.getElementById('camera-canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  scanning = true;
+
+  // Reset UI
+  document.getElementById('detected-dot').style.background = '#666';
+  document.getElementById('detected-label').textContent = 'Leter etter kyllinger...';
+  document.querySelector('.scan-reticle').classList.remove('detected');
 
   scanInterval = setInterval(() => {
-    if (video.readyState < 2) return;
+    if (video.readyState < 2 || !scanning) return;
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -140,40 +139,41 @@ function startScanning() {
     const innerRadius = Math.min(canvas.width, canvas.height) * 0.12;
     const outerRadius = Math.min(canvas.width, canvas.height) * 0.22;
 
-    // Sample center (where the chicken should be)
     const centerResult = sampleRegion(ctx, centerX, centerY, innerRadius, 0);
-    // Sample outer ring (background around the chicken)
     const outerResult = sampleRegion(ctx, centerX, centerY, outerRadius, innerRadius);
 
     const dot = document.getElementById('detected-dot');
     const label = document.getElementById('detected-label');
     const reticle = document.querySelector('.scan-reticle');
 
-    // Validate: center must have a dominant color, AND it must be different
-    // from the outer ring (chicken = distinct object against background)
     const isChickenShaped = centerResult.dominant &&
       centerResult.ratio > 0.10 &&
       (outerResult.dominant !== centerResult.dominant || outerResult.ratio < 0.10);
 
     if (isChickenShaped) {
-      dot.style.background = CSS_COLORS[centerResult.dominant];
-      label.textContent = `${COLOR_DISPLAY[centerResult.dominant]} oppdaget!`;
+      const color = centerResult.dominant;
+      dot.style.background = CSS_COLORS[color];
+      label.textContent = `${COLOR_DISPLAY[color]} oppdaget!`;
       reticle.classList.add('detected');
 
-      // Show the capture button so user can tap to confirm
-      lastDetectedColor = centerResult.dominant;
-      showCaptureBtn(centerResult.dominant);
+      // Immediately stop scanning and show confirm
+      stopScanning();
+
+      if (foundChickens.includes(color)) {
+        showToast(`Du har allerede funnet den ${COLOR_DISPLAY[color].toLowerCase()} kyllingen!`);
+        // Resume after toast
+        setTimeout(() => resumeScanning(), 1500);
+      } else {
+        showConfirmOverlay(color);
+      }
     } else {
       dot.style.background = '#666';
       label.textContent = 'Leter etter kyllinger...';
       reticle.classList.remove('detected');
-      lastDetectedColor = null;
-      hideCaptureBtn();
     }
   }, 100);
 }
 
-// Sample a ring/circle region and return dominant color + ratio
 function sampleRegion(ctx, cx, cy, maxR, minR) {
   const colorCounts = {};
   let totalSampled = 0;
@@ -184,16 +184,12 @@ function sampleRegion(ctx, cx, cy, maxR, minR) {
       const dx = x - cx;
       const dy = y - cy;
       const distSq = dx * dx + dy * dy;
-      if (distSq > maxR * maxR) continue;
-      if (distSq < minR * minR) continue;
+      if (distSq > maxR * maxR || distSq < minR * minR) continue;
 
       const pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
       const [h, s, l] = rgbToHsl(pixel[0], pixel[1], pixel[2]);
-
       const matched = matchColor(h, s, l);
-      if (matched) {
-        colorCounts[matched] = (colorCounts[matched] || 0) + 1;
-      }
+      if (matched) colorCounts[matched] = (colorCounts[matched] || 0) + 1;
       totalSampled++;
     }
   }
@@ -201,52 +197,24 @@ function sampleRegion(ctx, cx, cy, maxR, minR) {
   let dominant = null;
   let maxCount = 0;
   for (const [color, count] of Object.entries(colorCounts)) {
-    if (count > maxCount) {
-      maxCount = count;
-      dominant = color;
-    }
+    if (count > maxCount) { maxCount = count; dominant = color; }
   }
-
-  return {
-    dominant,
-    ratio: totalSampled > 0 ? maxCount / totalSampled : 0,
-    total: totalSampled
-  };
+  return { dominant, ratio: totalSampled > 0 ? maxCount / totalSampled : 0 };
 }
 
 function matchColor(h, s, l) {
-  // Skip very dark (eyes), very light, or very desaturated pixels
-  // Low thresholds to allow pastel colors like the light blue chicken
   if (s < 6 || l < 12 || l > 96) return null;
-
-  // Skip red/dark-orange pixels — these are chicken legs and beaks,
-  // common to ALL chickens regardless of body color.
-  // Red legs: hue 0-15, saturated
-  // Orange beak: hue 15-22, saturated, medium lightness
-  if (h <= 15 && s > 40) return null;           // red legs
-  if (h > 15 && h <= 22 && s > 50) return null; // orange beak
+  if (h <= 15 && s > 40) return null;
+  if (h > 15 && h <= 22 && s > 50) return null;
 
   let bestColor = null;
   let bestDist = Infinity;
-
   for (const [color, ref] of Object.entries(COLOR_REFS)) {
-    // Hue distance with circular wraparound
     let dh = Math.abs(h - ref.h);
     if (dh > 180) dh = 360 - dh;
-
-    // Hue weighted 2.5x to strongly separate green/yellow and pink/purple
-    const dist = Math.sqrt(
-      (dh * 2.5) ** 2 +
-      (s - ref.s) ** 2 +
-      (l - ref.l) ** 2
-    );
-
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestColor = color;
-    }
+    const dist = Math.sqrt((dh * 2.5) ** 2 + (s - ref.s) ** 2 + (l - ref.l) ** 2);
+    if (dist < bestDist) { bestDist = dist; bestColor = color; }
   }
-
   return bestDist <= MAX_COLOR_DISTANCE ? bestColor : null;
 }
 
@@ -255,7 +223,6 @@ function rgbToHsl(r, g, b) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h, s, l = (max + min) / 2;
-
   if (max === min) {
     h = s = 0;
   } else {
@@ -270,33 +237,8 @@ function rgbToHsl(r, g, b) {
   return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
 }
 
-// ── Capture button ──
-function showCaptureBtn(color) {
-  const btn = document.getElementById('capture-btn');
-  const img = document.getElementById('capture-btn-img');
-  const label = document.getElementById('capture-btn-label');
-  img.src = `${color}.png`;
-  label.textContent = `${COLOR_DISPLAY[color]} - trykk for \u00e5 fange!`;
-  btn.classList.add('visible');
-}
-
-function hideCaptureBtn() {
-  document.getElementById('capture-btn').classList.remove('visible');
-}
-
-function captureChicken() {
-  if (lastDetectedColor) {
-    showConfirmOverlay(lastDetectedColor);
-    hideCaptureBtn();
-  }
-}
-
 // ── Confirm overlay ──
 function showConfirmOverlay(color) {
-  if (foundChickens.includes(color)) {
-    showToast(`Du har allerede funnet den ${COLOR_DISPLAY[color].toLowerCase()} kyllingen!`);
-    return;
-  }
   pendingColor = color;
   document.getElementById('confirm-chicken-img').src = `${color}.png`;
   document.getElementById('confirm-text').textContent =
@@ -315,7 +257,8 @@ function confirmChicken() {
 function cancelConfirm() {
   document.getElementById('confirm-overlay').classList.remove('active');
   pendingColor = null;
-  lastDetectedColor = null;
+  // Resume scanning — camera stream is still alive
+  resumeScanning();
 }
 
 // ── Register found chicken ──
@@ -331,7 +274,6 @@ function registerChicken(color) {
   document.getElementById('popup-color-name').textContent = COLOR_DISPLAY[color];
   document.getElementById('popup-color-name').style.color = CSS_COLORS[color];
   document.getElementById('popup-count').textContent = `${foundChickens.length} / ${TOTAL_CHICKENS}`;
-
   document.getElementById('popup-chicken-icon').innerHTML =
     `<img src="${color}.png" alt="${COLOR_DISPLAY[color]} kylling" style="width:100%;height:100%;object-fit:contain;">`;
 
@@ -346,7 +288,6 @@ function registerChicken(color) {
     document.getElementById('popup-message').innerHTML =
       `Den <strong style="color:${CSS_COLORS[color]}">${COLOR_DISPLAY[color].toLowerCase()}</strong> kyllingen er samlet inn!`;
   }
-
   popup.classList.add('active');
 }
 
@@ -393,7 +334,6 @@ function startConfetti() {
   const pieces = [];
   const confettiColors = ['#FFD700', '#FF69B4', '#4A90D9', '#4CAF50', '#9C27B0',
                           '#FF6B6B', '#FFA726', '#66BB6A'];
-
   for (let i = 0; i < 150; i++) {
     pieces.push({
       x: Math.random() * canvas.width,
@@ -416,7 +356,6 @@ function startConfetti() {
       p.x += p.vx;
       p.angle += p.va;
       if (p.y < canvas.height + 20) alive = true;
-
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate((p.angle * Math.PI) / 180);
