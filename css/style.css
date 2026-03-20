@@ -305,7 +305,7 @@ body {
 
 .color-indicator {
   position: absolute;
-  bottom: 100px;
+  top: 70px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -599,7 +599,7 @@ body {
 /* Already found toast */
 .toast {
   position: fixed;
-  bottom: 100px;
+  top: 120px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0,0,0,0.8);
@@ -613,9 +613,9 @@ body {
 }
 
 @keyframes toastIn {
-  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
   to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 @keyframes toastOut {
-  to { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
 }
