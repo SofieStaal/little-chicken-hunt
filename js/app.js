@@ -29,6 +29,7 @@ let stream = null;
 let scanInterval = null;
 let detectionBuffer = [];
 let pendingColor = null;
+let missCount = 0;
 const DETECTION_THRESHOLD = 15; // ~1.5 seconds of consistent detection
 const DETECTION_MAJORITY = 8;   // at least 8 out of 15 frames must agree
 const DETECTION_LEAD = 4;       // winner must lead runner-up by at least 4
@@ -163,28 +164,35 @@ function startScanning() {
       reticle.classList.add('detected');
 
       detectionBuffer.push(centerResult.dominant);
-      if (detectionBuffer.length > DETECTION_THRESHOLD) {
-        detectionBuffer.shift();
-      }
-
-      // Check majority agreement over the buffer
-      if (detectionBuffer.length === DETECTION_THRESHOLD && !pendingColor) {
-        const counts = {};
-        detectionBuffer.forEach(c => counts[c] = (counts[c] || 0) + 1);
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-        const topCount = sorted[0][1];
-        const runnerUp = sorted.length > 1 ? sorted[1][1] : 0;
-        // Must have enough votes AND a clear lead over the second color
-        if (topCount >= DETECTION_MAJORITY && (topCount - runnerUp) >= DETECTION_LEAD) {
-          showConfirmOverlay(sorted[0][0]);
-          detectionBuffer = [];
-        }
-      }
+      missCount = 0;
     } else {
       dot.style.background = '#666';
       label.textContent = 'Leter etter kyllinger...';
       reticle.classList.remove('detected');
-      detectionBuffer = [];
+
+      // Allow brief interruptions — only reset after 5 consecutive misses
+      missCount++;
+      if (missCount >= 5) {
+        detectionBuffer = [];
+      }
+    }
+
+    // Keep buffer capped
+    if (detectionBuffer.length > DETECTION_THRESHOLD) {
+      detectionBuffer.shift();
+    }
+
+    // Check majority agreement over the buffer
+    if (detectionBuffer.length === DETECTION_THRESHOLD && !pendingColor) {
+      const counts = {};
+      detectionBuffer.forEach(c => counts[c] = (counts[c] || 0) + 1);
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const topCount = sorted[0][1];
+      const runnerUp = sorted.length > 1 ? sorted[1][1] : 0;
+      if (topCount >= DETECTION_MAJORITY && (topCount - runnerUp) >= DETECTION_LEAD) {
+        showConfirmOverlay(sorted[0][0]);
+        detectionBuffer = [];
+      }
     }
   }, 100);
 }
