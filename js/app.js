@@ -27,12 +27,8 @@ const CSS_COLORS = {
 let foundChickens = JSON.parse(localStorage.getItem('foundChickens') || '[]');
 let stream = null;
 let scanInterval = null;
-let detectionBuffer = [];
 let pendingColor = null;
-let missCount = 0;
-const DETECTION_THRESHOLD = 10; // ~1 second of detection
-const DETECTION_MAJORITY = 5;   // at least 5 out of 10 frames must agree
-const DETECTION_LEAD = 2;       // winner must lead runner-up by at least 2
+let lastDetectedColor = null;
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -122,7 +118,8 @@ function stopCamera() {
   }
   const video = document.getElementById('camera-feed');
   if (video) video.srcObject = null;
-  detectionBuffer = [];
+  lastDetectedColor = null;
+  hideCaptureBtn();
 }
 
 // ── Color Detection ──
@@ -163,36 +160,15 @@ function startScanning() {
       label.textContent = `${COLOR_DISPLAY[centerResult.dominant]} oppdaget!`;
       reticle.classList.add('detected');
 
-      detectionBuffer.push(centerResult.dominant);
-      missCount = 0;
+      // Show the capture button so user can tap to confirm
+      lastDetectedColor = centerResult.dominant;
+      showCaptureBtn(centerResult.dominant);
     } else {
       dot.style.background = '#666';
       label.textContent = 'Leter etter kyllinger...';
       reticle.classList.remove('detected');
-
-      // Allow brief interruptions — only reset after 5 consecutive misses
-      missCount++;
-      if (missCount >= 5) {
-        detectionBuffer = [];
-      }
-    }
-
-    // Keep buffer capped
-    if (detectionBuffer.length > DETECTION_THRESHOLD) {
-      detectionBuffer.shift();
-    }
-
-    // Check majority agreement over the buffer
-    if (detectionBuffer.length === DETECTION_THRESHOLD && !pendingColor) {
-      const counts = {};
-      detectionBuffer.forEach(c => counts[c] = (counts[c] || 0) + 1);
-      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-      const topCount = sorted[0][1];
-      const runnerUp = sorted.length > 1 ? sorted[1][1] : 0;
-      if (topCount >= DETECTION_MAJORITY && (topCount - runnerUp) >= DETECTION_LEAD) {
-        showConfirmOverlay(sorted[0][0]);
-        detectionBuffer = [];
-      }
+      lastDetectedColor = null;
+      hideCaptureBtn();
     }
   }, 100);
 }
@@ -292,6 +268,27 @@ function rgbToHsl(r, g, b) {
     }
   }
   return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+}
+
+// ── Capture button ──
+function showCaptureBtn(color) {
+  const btn = document.getElementById('capture-btn');
+  const img = document.getElementById('capture-btn-img');
+  const label = document.getElementById('capture-btn-label');
+  img.src = `${color}.png`;
+  label.textContent = `${COLOR_DISPLAY[color]} - trykk for \u00e5 fange!`;
+  btn.classList.add('visible');
+}
+
+function hideCaptureBtn() {
+  document.getElementById('capture-btn').classList.remove('visible');
+}
+
+function captureChicken() {
+  if (lastDetectedColor) {
+    showConfirmOverlay(lastDetectedColor);
+    hideCaptureBtn();
+  }
 }
 
 // ── Confirm overlay ──

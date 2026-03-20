@@ -342,6 +342,40 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* CAPTURE BUTTON (in scanner) */
+.capture-btn {
+  display: none;
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  color: white;
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  align-items: center;
+  gap: 10px;
+  animation: slideUp 0.3s ease;
+}
+.capture-btn.visible {
+  display: flex;
+}
+.capture-btn img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.capture-btn:active {
+  transform: translateX(-50%) scale(0.95);
+}
+
 /* CONFIRM OVERLAY (in scanner) */
 .confirm-overlay {
   display: none;
