@@ -247,17 +247,25 @@ function showConfirmOverlay(color) {
 }
 
 function confirmChicken() {
+  const color = pendingColor;
+  pendingColor = null;
+
+  // Hide overlay
   document.getElementById('confirm-overlay').classList.remove('active');
-  if (pendingColor) {
-    // Register and go straight to home screen
-    if (!foundChickens.includes(pendingColor)) {
-      foundChickens.push(pendingColor);
+
+  if (color) {
+    // Register chicken
+    if (!foundChickens.includes(color)) {
+      foundChickens.push(color);
       localStorage.setItem('foundChickens', JSON.stringify(foundChickens));
     }
     stopCamera();
-    pendingColor = null;
-    showScreen('screen-home');
-    updateUI();
+
+    // Small delay to let overlay close, then go home
+    setTimeout(() => {
+      showScreen('screen-home');
+      updateUI();
+    }, 200);
   }
 }
 
